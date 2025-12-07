@@ -1,0 +1,60 @@
+services:
+  trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: conversion_rate
+    container_name: conversion_rate_trainer
+    working_dir: /app
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./src:/app/src
+    command: >
+      sh -c "
+      python src/train.py --train-path data/KAG_conversion_data.csv
+      "
+
+  model-api:
+    image: conversion_rate
+    container_name: conversion_rate_api
+    depends_on:
+      - trainer
+    working_dir: /app
+    environment:
+      MODEL_URI: /app/models/best_model
+    volumes:
+      - ./models:/app/models
+      - ./src:/app/src
+      - ./data:/app/data
+    ports:
+      - "5000:5000"
+    command: >
+      sh -c "
+      echo 'Aguardando modelo em /app/models/best_model...' &&
+      while [ ! -f /app/models/train_done.flag ]; do
+        sleep 5;
+      done &&
+      echo 'Treino concluído, iniciando API...' &&
+      python src/serve_model.py
+      "
+
+  app-ui:
+    image: conversion_rate
+    container_name: conversion_rate_app
+    depends_on:
+      - model-api
+      - trainer
+    working_dir: /app
+    environment:
+      API_URL: http://model-api:5000/predict
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./models:/app/models
+    ports:
+      - "8501:8501"
+    command: >
+      sh -c "
+      streamlit run src/app_streamlit.py --server.port=8501 --server.address=0.0.0.0
+      "
