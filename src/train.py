@@ -1,3 +1,4 @@
+
 import os
 import argparse
 import shutil
@@ -42,7 +43,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
     categorical_cols = ['interest']
     numerical_cols = [col for col in X.columns if col not in categorical_cols]
 
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    kf = KFold(n_splits=5, shuffle=True, random_state=4)
 
     resultados = []          
     modelos_para_servir = [] 
@@ -111,7 +112,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
     
     # Decision Tree
     with mlflow.start_run(run_name="DecisionTreeRegressor"):
-        model = DecisionTreeRegressor(random_state=42)
+        model = DecisionTreeRegressor(random_state=4)
         param_grid = {
             "max_depth": [None, 3, 5, 10],
             "min_samples_split": [2, 5, 10],
@@ -150,7 +151,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
 
     # Random Forest
     with mlflow.start_run(run_name="RandomForestRegressor"):
-        model = RandomForestRegressor(random_state=42, n_jobs=-1)
+        model = RandomForestRegressor(random_state=4, n_jobs=-1)
         param_grid = {
             "n_estimators": [100, 200],
             "max_depth": [None, 5, 10],
@@ -202,7 +203,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
         X_test_cat = encoder.transform(X_test[categorical_cols])
         X_test_proc = np.hstack([X_test_num, X_test_cat])
 
-        model = MLPRegressor(max_iter=1000, random_state=42)
+        model = MLPRegressor(max_iter=1000, random_state=4)
 
         param_grid = {
             "hidden_layer_sizes": [(32,), (64,), (64, 32)],
@@ -246,7 +247,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
             ("preprocess", preprocessor),
             ("model", MLPRegressor(
                 max_iter=1000,
-                random_state=42,
+                random_state=4,
                 **{k: v for k, v in grid.best_params_.items()}
             ))
         ])
@@ -259,7 +260,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
 
     # GradientBoostingRegressor
     with mlflow.start_run(run_name="GradientBoostingRegressor"):
-        model = GradientBoostingRegressor(random_state=42)
+        model = GradientBoostingRegressor(random_state=4)
         param_grid = {
             "n_estimators": [100, 200],
             "learning_rate": [0.05, 0.1],
