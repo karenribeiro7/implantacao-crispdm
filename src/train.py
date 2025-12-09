@@ -20,6 +20,12 @@ import mlflow
 import mlflow.sklearn
 
 def load_data(train_path: str):
+    """
+
+    Função para carregar e pré-processar os dados de treinamento.
+    :param train_path: Description
+    :type train_path: str
+    """
     df = pd.read_csv(train_path)
 
     # pré-processamento 
@@ -32,6 +38,15 @@ def load_data(train_path: str):
     return X, y
 
 def train_and_log_models(train_path: str, experiment_name: str = "conversion_rate_experiments"):
+    """
+    Função para treinar múltiplos modelos, e realizar tuning de hiperparâmetros,
+    registrando os resultados no MLflow.
+
+    :param train_path: Description
+    :type train_path: str
+    :param experiment_name: Description
+    :type experiment_name: str
+    """
     mlflow.set_experiment(experiment_name)
 
     X, y = load_data(train_path)
@@ -303,23 +318,52 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
     print("\nResultados (teste):")
     print(resultados_df)
 
-    best_row = resultados_df.loc[resultados_df["rmse"].idxmin()]
-    best_model_name = best_row["modelo"]
-    print("\nMelhor modelo:", best_model_name)
+    df = resultados_df.copy()
 
-    # encontrar o objeto do melhor modelo
+    rmse_max = df["rmse"].max()
+    rmse_min = df["rmse"].min()
+    df["rmse_norm"] = (df["rmse"] - rmse_min) / (rmse_max - rmse_min + 1e-8)
+
+    mae_max = df["mae"].max()
+    mae_min = df["mae"].min()
+    df["mae_norm"] = (df["mae"] - mae_min) / (mae_max - mae_min + 1e-8)
+
+    r2_max = df["r2"].max()
+    r2_min = df["r2"].min()
+    df["r2_norm"] = (df["r2"] - r2_min) / (r2_max - r2_min + 1e-8)
+
+
+    alpha = 0.5  # peso da RMSE
+    beta  = 0.2  # peso da MAE
+    gamma = 0.3  # peso do R²
+
+
+    df["score"] = (
+        alpha * (1 - df["rmse_norm"]) +
+        beta  * (1 - df["mae_norm"])  +
+        gamma * df["r2_norm"]
+    )
+
+    print("\nTabela com score composto:")
+    print(df[["modelo", "rmse", "mae", "r2", "score"]])
+
+    best_row = df.loc[df["score"].idxmax()]
+    best_model_name = best_row["modelo"]
+    print("\nMelhor modelo (score composto):", best_model_name)
+
+
     best_model_obj = None
-    best_rmse = best_row["rmse"]
     for nome, rmse_val, modelo_obj in modelos_para_servir:
-        if abs(rmse_val - best_rmse) < 1e-8:
+        if nome == best_model_name:
             best_model_obj = modelo_obj
             break
+
 
     os.makedirs("/app/models", exist_ok=True)
     save_path = "/app/models/best_model"
 
     if os.path.exists(save_path):
-            shutil.rmtree(save_path)
+        shutil.rmtree(save_path)
 
     print(f"Salvando melhor modelo em: {save_path}")
     mlflow.sklearn.save_model(best_model_obj, path=save_path)
@@ -328,7 +372,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
     with open(train_flag_path, "w") as f:
         f.write("done")
 
-    return resultados_df
+    return resultados_df 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
