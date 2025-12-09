@@ -10,16 +10,6 @@ API_URL = os.getenv("API_URL", "http://model-api:5000/predict")
 st.title("ConversionRate - Predição")
 
 
-best_model_name = None
-best_model_name_path = "/app/models/best_model_name.txt"  
-
-if os.path.exists(best_model_name_path):
-    try:
-        with open(best_model_name_path, "r") as f:
-            best_model_name = f.read().strip()
-    except Exception:
-        best_model_name = None
-
 st.write("Faça upload de um CSV para executar a predição.")
 
 uploaded_file = st.file_uploader("Upload do arquivo CSV", type=["csv"])
@@ -52,8 +42,6 @@ if uploaded_file is not None:
                     r2   = r2_score(y_true, y_pred)
 
                     st.subheader("Métricas de Avaliação no CSV enviado")
-                    if best_model_name:
-                        st.write(f"*Modelo usado:* {best_model_name}")
                     st.write(f"*MSE* : {mse:.4f}")
                     st.write(f"*RMSE*: {rmse:.4f}")
                     st.write(f"*MAE* : {mae:.4f}")

@@ -299,7 +299,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
         modelos_para_servir.append(("GradientBoosting", rmse, best_model))
 
     # selecionar melhor modelo pelo menor RMSE e salvar
-    resultados_df = pd.DataFrame(resultados, columns=["modelo", "rmse", "mae", "r2"])
+    resultados_df = pd.DataFrame(resultados, columns=["modelo","rmse", "mae", "r2"])
     print("\nResultados (teste):")
     print(resultados_df)
 
@@ -311,7 +311,7 @@ def train_and_log_models(train_path: str, experiment_name: str = "conversion_rat
     best_model_obj = None
     best_rmse = best_row["rmse"]
     for nome, rmse_val, modelo_obj in modelos_para_servir:
-        if nome == best_model_name and abs(rmse_val - best_rmse) < 1e-8:
+        if abs(rmse_val - best_rmse) < 1e-8:
             best_model_obj = modelo_obj
             break
 
